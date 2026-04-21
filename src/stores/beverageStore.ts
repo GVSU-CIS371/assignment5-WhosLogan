@@ -6,7 +6,9 @@ import {
   BeverageType,
 } from "../types/beverage";
 import tempretures from "../data/tempretures.json";
+
 import db from "../firebase.ts";
+
 import {
   collection,
   getDocs,
@@ -33,7 +35,34 @@ export const useBeverageStore = defineStore("BeverageStore", {
   }),
 
   actions: {
-    init() {},
+    async init() {
+        let snapshot = await getDocs(collection(db, "bases"));
+
+        // @ts-ignore
+        this.bases = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        this.currentBase = this.bases[0];
+
+        snapshot = await getDocs(collection(db, "creamers"));
+
+        //@ts-ignore
+        this.creamers = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        this.currentCreamer = this.creamers[0];
+
+        snapshot = await getDocs(collection(db, "syrups"));
+
+        //@ts-ignore
+        this.syrups = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        this.currentSyrup = this.syrups[0];
+    },
     makeBeverage() {},
 
     showBeverage() {},
