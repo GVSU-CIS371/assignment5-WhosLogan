@@ -65,21 +65,74 @@
         </template>
       </li>
     </ul>
-    <input type="text" placeholder="Beverage Name" />
-    <button>🍺 Make Beverage</button>
+    <button v-if="!beverageStore.user" @click="signInWithGoogle()">Sign in with Google</button>
+    <div v-else>
+      <p>Welcome, {{ beverageStore.user.displayName }}</p>
+      <button @click="logout()">Sign out</button>
+    </div>
+    <p v-if="beverageStore.usrMessage">{{ beverageStore.usrMessage }}</p>
+    <input type="text" placeholder="Beverage Name" v-model="beverageStore.currentName" />
+    <button :disabled="!beverageStore.user" @click="makeBeverage()">🍺 Make Beverage</button>
   </div>
   <div id="beverage-container" style="margin-top: 20px"></div>
+  <ul>
+    <li>
+      <template v-for="b in beverageStore.beverages" :key="b.id">
+        <label>
+          <input
+              type="radio"
+              name="beverages"
+              :id="`r${b.id}`"
+              :value="b.id"
+              v-model="beverageStore.selectedPreset"
+              @change="beverageStore.showBeverage(b.id)"
+          />
+          {{ b.name }}
+        </label>
+      </template>
+    </li>
+  </ul>
 </template>
 
 <script setup lang="ts">
 import Beverage from "./components/Beverage.vue";
 import { useBeverageStore } from "./stores/beverageStore";
 import {onMounted} from "vue";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+
+const auth = getAuth();
+const provider = new GoogleAuthProvider();
+
 const beverageStore = useBeverageStore();
 
 onMounted(async () => {
   await beverageStore.init();
-})
+
+  onAuthStateChanged(auth, (u) => {
+    beverageStore.setUser(u);
+  })
+});
+
+async function signInWithGoogle() {
+  try {
+    const result = await signInWithPopup(auth, provider);
+
+    const user = result.user;
+    beverageStore.setUser(user);
+  } catch (error) {
+    beverageStore.usrMessage = "Unable to sign you in with Google.";
+  }
+}
+
+async function logout() {
+  await signOut(auth);
+  beverageStore.setDefaults();
+  beverageStore.usrMessage = "Signed out successfully.";
+}
+
+async function makeBeverage() {
+  beverageStore.usrMessage = await beverageStore.makeBeverage();
+}
 </script>
 
 <style lang="scss">
